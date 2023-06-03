@@ -4,8 +4,9 @@ import { fontNames } from "../assets";
 import TabBar from "../components/nav/TabBar";
 import HomeScreen from "../screens/Home";
 import { colors } from "../theme/colors";
+import { TabNavigationParams } from "./types";
 
-const Tabs = createBottomTabNavigator();
+const Tabs = createBottomTabNavigator<TabNavigationParams>();
 
 const PlaceHolder = () => (
   <View style={styles.container}>
@@ -34,14 +35,14 @@ const styles = StyleSheet.create({
 export default function TabNavigation() {
   return (
     <Tabs.Navigator
-      initialRouteName="Home"
+      initialRouteName="home"
       tabBar={TabBar}
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Tabs.Screen name="Home" component={HomeScreen} />
-      <Tabs.Screen name="Explore" component={PlaceHolder} />
+      <Tabs.Screen name="home" component={HomeScreen} />
+      <Tabs.Screen name="explore" component={PlaceHolder} />
     </Tabs.Navigator>
   );
 }

@@ -3,8 +3,9 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { fonts } from "./assets";
 import TabNavigation from "./router/Tabs";
 import { colors } from "./theme/colors";
@@ -29,20 +30,20 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer
-      theme={{
-        ...DefaultTheme,
-        colors: {
-          ...DefaultTheme.colors,
-          background: colors.paper.light,
-        },
-      }}
-    >
-      <View style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
+      <NavigationContainer
+        theme={{
+          ...DefaultTheme,
+          colors: {
+            ...DefaultTheme.colors,
+            background: colors.paper.light,
+          },
+        }}
+      >
         <StatusBar style="auto" />
         <TabNavigation />
-      </View>
-    </NavigationContainer>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
 

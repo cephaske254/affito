@@ -13,7 +13,7 @@ type Props = BottomTabBarProps;
 const TabBar = ({ descriptors, state, navigation }: Props) => {
   const widths = createRef<{}>();
 
-  const onPress = (route: typeof state.routes[number], active: boolean) => {
+  const onPress = (route: (typeof state.routes)[number], active: boolean) => {
     const event = navigation.emit({
       type: "tabPress",
       target: route.key,
@@ -119,11 +119,10 @@ export default TabBar;
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    height: 150,
     bottom: 0,
     left: 0,
     right: 0,
+    height: 100,
   },
 
   tabContainer: {
@@ -132,7 +131,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 22,
-    paddingVertical: 20,
+    paddingVertical: 12,
   },
   tabContainerActive: {
     backgroundColor: colors.primary.main,

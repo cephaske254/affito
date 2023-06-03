@@ -1,6 +1,6 @@
-import { Fragment } from "react";
 import {
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableNativeFeedback,
@@ -15,7 +15,7 @@ import { scale } from "../../utils/fontSize";
 const headers = ["Find", "The Perfect", "Place"];
 function AppHeaderText() {
   return (
-    <View style={[styles.container]}>
+    <View style={[styles.innerContainer]}>
       <View style={styles.verticalLine} />
       <View style={[styles.headerContainer]}>
         {headers.map((text) => (
@@ -31,7 +31,7 @@ function AppHeaderText() {
 
 function AppHeaderIcon() {
   return (
-    <View style={[styles.container, styles.iconContainer, styles.center]}>
+    <View style={[styles.innerContainer, styles.iconContainer, styles.center]}>
       <Image source={assets.logoLight} style={styles.logoImage} />
       <Text
         style={{
@@ -60,15 +60,18 @@ function AppHeaderButton() {
 
 export default function AppHeader() {
   return (
-    <Fragment>
+    <View style={styles.container}>
       <AppHeaderIcon />
       <AppHeaderText />
-    </Fragment>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    paddingTop: Platform.OS === "android" ? 20 : 0,
+  },
+  innerContainer: {
     display: "flex",
     flexDirection: "row",
     width: "100%",

@@ -1,5 +1,5 @@
 import { BlurView } from "expo-blur";
-import { Fragment, ReactNode } from "react";
+import { ReactNode } from "react";
 import {
   Dimensions,
   Image,
@@ -11,6 +11,7 @@ import {
 import { PanGestureHandler } from "react-native-gesture-handler";
 
 import Animated, {
+  Extrapolate,
   interpolate,
   useAnimatedGestureHandler,
   useAnimatedStyle,
@@ -33,6 +34,8 @@ const BUTTON_HEIGHTS = 60;
 const CARD_PADDING = 10;
 const CARD_WIDTH = windowWidth * 0.83;
 
+const CARD_HEIGHT = CARD_WIDTH * 1.2;
+
 const roundToNearestCardWidth = (x) => {
   "worklet";
   return Math.round(x / CARD_WIDTH) * CARD_WIDTH;
@@ -46,45 +49,70 @@ const getCurrentIndex = (x: Animated.SharedValue<number>) => {
 
 function NearbyCards() {
   const x = useSharedValue(0);
-  const max_width = CARD_WIDTH * (apartments.length - 1);
+  const startedAt = useSharedValue(0);
+  const startX = useSharedValue(0);
+
+  // Scroll constraints, based on the cards
+  const max_scroll = CARD_WIDTH * (apartments.length - 1);
+  const min_scroll = -max_scroll / (apartments.length - 1);
 
   const onScroll = useAnimatedGestureHandler({
-    onActive: ({ translationX }) => {
-      const step = 15;
-      const dir: "right" | "left" = translationX < 0 ? "left" : "right";
-      const next = dir === "left" ? x.value - step : x.value + step;
-      if (next > 0 && next < max_width) x.value = next;
-      else if (next > 0) x.value = dir === "left" ? max_width : x.value;
+    onStart(event) {
+      // store the initial values separately
+      startedAt.value = event.translationX;
+      startX.value = x.value;
     },
-    onEnd({ velocityX }) {
-      x.value = withTiming(roundToNearestCardWidth(x.value), {
-        duration: interpolate(velocityX, [0, 1000], [400, 200]),
-      });
+    onActive: ({ translationX, velocityX }) => {
+      const direction = translationX < 0 ? "left" : "right";
+      // Increment/decrement x by a step, depending on the swipe speed
+      const step = Math.floor(
+        interpolate(
+          Math.abs(velocityX),
+          [400, 2000],
+          [4, 10],
+          Extrapolate.CLAMP
+        )
+      );
+
+      if (direction === "right") {
+        x.value = x.value + step;
+      } else {
+        x.value = x.value - step;
+      }
+    },
+    onEnd({ translationX }) {
+      let next = roundToNearestCardWidth(startX.value + translationX);
+      // if the user scrolled too much
+      if (next < 0) next = min_scroll + CARD_WIDTH;
+
+      x.value = withTiming(next);
     },
   });
 
   return (
-    <Fragment>
-      <PanGestureHandler onGestureEvent={onScroll} shouldCancelWhenOutside>
-        <Animated.View
-          style={[
-            styles.scrollView,
-            { overflow: "hidden", marginLeft: CARD_PADDING },
-          ]}
-        >
-          {apartments.map((apartment, index) => {
-            return (
-              <NearbyCard
-                key={apartment.name}
-                apartment={apartment}
-                index={index}
-                x={x}
-              />
-            );
-          })}
-        </Animated.View>
-      </PanGestureHandler>
-    </Fragment>
+    <PanGestureHandler
+      onGestureEvent={onScroll}
+      // We add this value tu allow vertical scroll if the component is rendered inside a scrollview
+      activeOffsetX={[-10, 10]}
+    >
+      <Animated.View
+        style={[
+          styles.scrollView,
+          { overflow: "hidden", marginLeft: CARD_PADDING },
+        ]}
+      >
+        {apartments.map((apartment, index) => {
+          return (
+            <NearbyCard
+              key={apartment.name}
+              apartment={apartment}
+              index={index}
+              x={x}
+            />
+          );
+        })}
+      </Animated.View>
+    </PanGestureHandler>
   );
 }
 const SCALE = 0.8;
@@ -104,6 +132,13 @@ const NearbyCard = ({
 
   const card_styles = useAnimatedStyle(() => {
     const currentIndex = getCurrentIndex(x);
+
+    const opacity = interpolate(
+      currentIndex.value,
+      [index - 3, index - 1, index, index + 1, index + 2, index + 3],
+      [0, 1, 1, 0, 0, 1]
+    );
+
     return {
       position: "absolute",
       zIndex: interpolate(
@@ -111,11 +146,8 @@ const NearbyCard = ({
         [0, apartments.length - 1],
         [apartments.length, 0]
       ),
-      opacity: interpolate(
-        currentIndex.value,
-        [index - 3, index - 1, index, index + 1, index + 2, index + 3],
-        [0, 1, 1, 0, 0, 1]
-      ),
+      opacity,
+      overflow: "hidden",
       transform: [
         {
           translateX: interpolate(
@@ -161,9 +193,24 @@ const NearbyCard = ({
     };
   });
 
+  const innerContainerStyles = useAnimatedStyle(() => {
+    const currentIndex = getCurrentIndex(x).value;
+
+    const borderRadius = interpolate(
+      currentIndex,
+      input,
+      [30, 0, 30],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      borderRadius,
+    };
+  }, []);
+
   return (
     <Animated.View style={[styles.card, card_styles]} key={apartment.name}>
-      <View style={[styles.cardInnerCont]}>
+      <Animated.View style={[styles.cardInnerCont, innerContainerStyles]}>
         <Image
           resizeMethod="scale"
           resizeMode="cover"
@@ -247,7 +294,7 @@ const NearbyCard = ({
           </View>
         </Animated.View>
         {/*  */}
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -286,12 +333,12 @@ const SaveButton = ({ onClick }: { onClick: VoidFunction }) => {
 const styles = StyleSheet.create({
   scrollView: {
     marginTop: scale(20),
-    height: CARD_WIDTH * (4 / 3),
+    height: CARD_HEIGHT,
   },
   card: {
     width: CARD_WIDTH,
     paddingLeft: CARD_PADDING * 2,
-    height: CARD_WIDTH * (4 / 3),
+    height: CARD_HEIGHT,
   },
   cardInnerCont: {
     backgroundColor: colors.paper.main,
